@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-labelledby="title description">
+  <title id="title">PortPilot terminal example</title>
+  <desc id="description">Illustrative terminal output showing PortPilot checking and safely declining to terminate a process on port 3000.</desc>
+  <rect width="960" height="420" rx="14" fill="#111318"/>
+  <path d="M14 0h932a14 14 0 0 1 14 14v34H0V14A14 14 0 0 1 14 0Z" fill="#20232b"/>
+  <circle cx="24" cy="24" r="6" fill="#ff6058"/>
+  <circle cx="46" cy="24" r="6" fill="#ffbd2e"/>
+  <circle cx="68" cy="24" r="6" fill="#28c840"/>
+  <text x="480" y="29" text-anchor="middle" fill="#a5a9b5" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">PortPilot — example output</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">
+    <text x="28" y="88" fill="#8be9fd">$</text>
+    <text x="47" y="88" fill="#f3f4f6">portpilot check 3000</text>
+    <text x="28" y="122" fill="#ffcc66">Port 3000 is occupied:</text>
+    <text x="28" y="162" fill="#a5a9b5">PORT  PROTO  PROCESS  PID    LOCAL ADDRESS  COMMAND</text>
+    <text x="28" y="190" fill="#e7e9ef">3000  TCP    node     82104  127.0.0.1      node server.js</text>
+    <text x="28" y="242" fill="#8be9fd">$</text>
+    <text x="47" y="242" fill="#f3f4f6">portpilot kill 3000</text>
+    <text x="28" y="276" fill="#a5a9b5">PORT  PROTO  PROCESS  PID    LOCAL ADDRESS  COMMAND</text>
+    <text x="28" y="304" fill="#e7e9ef">3000  TCP    node     82104  127.0.0.1      node server.js</text>
+    <text x="28" y="344" fill="#f3f4f6">Terminate PID 82104 (node) using TCP port 3000? [y/N] n</text>
+    <text x="28" y="374" fill="#8be9fd">Skipped PID 82104.</text>
+  </g>
+</svg>
