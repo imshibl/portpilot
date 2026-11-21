@@ -1,3 +1,4 @@
+// These tests verify monitor events for listeners appearing and disappearing.
 package monitor
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/portpilot/portpilot/internal/ports"
 )
 
+// TestDiffDetectsOccupancyAndRelease checks both directions of a snapshot comparison.
 func TestDiffDetectsOccupancyAndRelease(t *testing.T) {
 	old := []ports.Listener{{Port: 3000, Protocol: "tcp", PID: 10, LocalAddress: "127.0.0.1"}}
 	current := []ports.Listener{

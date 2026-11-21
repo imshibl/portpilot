@@ -1,3 +1,4 @@
+// These integration tests verify real socket discovery and command-line redaction.
 package discovery
 
 import (
@@ -9,6 +10,7 @@ import (
 )
 
 func TestListFindsCurrentProcessListener(t *testing.T) {
+	// Opening a temporary listener gives the scanner a known socket owned by this test process.
 	socket, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -29,6 +31,7 @@ func TestListFindsCurrentProcessListener(t *testing.T) {
 }
 
 func TestRedactCommandSecrets(t *testing.T) {
+	// Credentials are hidden, while ordinary command arguments remain useful for diagnosis.
 	command := "server --csrf_token abc123 --api-key=def456 PASSWORD=hunter2 --port 3000"
 	got := redactCommand(command)
 	for _, secret := range []string{"abc123", "def456", "hunter2"} {

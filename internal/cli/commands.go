@@ -19,10 +19,12 @@ import (
 )
 
 var (
+	// Lip Gloss applies a terminal color when the selected output supports it.
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 	warningStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 )
 
+// newCheckCommand reports discovered owners and probes protocols whose owners were hidden by the OS.
 func newCheckCommand(scanner discovery.Scanner) *cobra.Command {
 	return &cobra.Command{
 		Use:   "check <port>",
@@ -45,6 +47,7 @@ func newCheckCommand(scanner discovery.Scanner) *cobra.Command {
 					seenProtocols[listener.Protocol] = true
 				}
 			}
+			// A bind test still detects a used port if process/socket details were unavailable.
 			for _, protocol := range []string{"tcp", "udp"} {
 				if seenProtocols[protocol] {
 					continue
@@ -72,6 +75,7 @@ func newCheckCommand(scanner discovery.Scanner) *cobra.Command {
 	}
 }
 
+// newListCommand prints TCP listeners, optionally filtered or encoded as JSON.
 func newListCommand(scanner discovery.Scanner) *cobra.Command {
 	var asJSON bool
 	var processName string
@@ -118,6 +122,7 @@ func newListCommand(scanner discovery.Scanner) *cobra.Command {
 	return cmd
 }
 
+// newKillCommand shows the exact owners of a port and requires confirmation for each process.
 func newKillCommand(scanner discovery.Scanner, killer processmgmt.Killer) *cobra.Command {
 	var force bool
 	cmd := &cobra.Command{
@@ -149,6 +154,7 @@ func newKillCommand(scanner discovery.Scanner, killer processmgmt.Killer) *cobra
 			reader := bufio.NewReader(cmd.InOrStdin())
 			seen := make(map[string]struct{})
 			for _, listener := range matches {
+				// One process can own multiple sockets on this port; signal it only once.
 				identity := fmt.Sprintf("%d/%d", listener.PID, listener.StartTime)
 				if _, exists := seen[identity]; exists {
 					continue
@@ -180,6 +186,7 @@ func newKillCommand(scanner discovery.Scanner, killer processmgmt.Killer) *cobra
 	return cmd
 }
 
+// newAvailableCommand suggests ports that can be bound on local IPv4.
 func newAvailableCommand() *cobra.Command {
 	var rangeValue string
 	var count int
@@ -217,6 +224,7 @@ func newAvailableCommand() *cobra.Command {
 	return cmd
 }
 
+// newWatchCommand repeatedly scans and prints only changes between snapshots.
 func newWatchCommand(scanner discovery.Scanner) *cobra.Command {
 	var interval time.Duration
 	cmd := &cobra.Command{
@@ -236,6 +244,7 @@ func newWatchCommand(scanner discovery.Scanner) *cobra.Command {
 			}
 			ticker := time.NewTicker(interval)
 			defer ticker.Stop()
+			// Context cancellation (Ctrl+C in the executable) cleanly stops the watch loop.
 			for {
 				select {
 				case <-cmd.Context().Done():
@@ -259,6 +268,7 @@ func newWatchCommand(scanner discovery.Scanner) *cobra.Command {
 	return cmd
 }
 
+// newInfoCommand prints the version embedded in this build.
 func newInfoCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
@@ -271,6 +281,7 @@ func newInfoCommand() *cobra.Command {
 	}
 }
 
+// parsePort converts a CLI argument to a validated port number.
 func parsePort(value string) (uint32, error) {
 	port, err := strconv.Atoi(value)
 	if err != nil {
@@ -279,6 +290,7 @@ func parsePort(value string) (uint32, error) {
 	return ports.Validate(port)
 }
 
+// printListeners writes listener details in aligned columns.
 func printListeners(output io.Writer, listeners []ports.Listener) error {
 	writer := tabwriter.NewWriter(output, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(writer, "PORT\tPROTO\tPROCESS\tPID\tLOCAL ADDRESS\tCOMMAND")
@@ -295,6 +307,7 @@ func printListeners(output io.Writer, listeners []ports.Listener) error {
 		if command == "" {
 			command = "-"
 		} else {
+			// Keep command-line text on one row so it cannot break the table layout.
 			command = strings.NewReplacer("\n", `\n`, "\r", `\r`, "\t", " ").Replace(command)
 		}
 		fmt.Fprintf(writer, "%d\t%s\t%s\t%s\t%s\t%s\n",
@@ -303,12 +316,13 @@ func printListeners(output io.Writer, listeners []ports.Listener) error {
 	return writer.Flush()
 }
 
+// confirm asks for an explicit yes; every other response safely declines termination.
 func confirm(input *bufio.Reader, output io.Writer, listener ports.Listener) (bool, error) {
 	if _, err := fmt.Fprintf(output, "Terminate PID %d (%s) using %s port %d? [y/N] ",
 		listener.PID, listener.Process, strings.ToUpper(listener.Protocol), listener.Port); err != nil {
 		return false, err
 	}
-	line, err := bufio.NewReader(input).ReadString('\n')
+	line, err := input.ReadString('\n')
 	if err != nil && err != io.EOF {
 		return false, fmt.Errorf("read confirmation: %w", err)
 	}

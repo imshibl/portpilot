@@ -1,13 +1,13 @@
 package ports
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
-	"syscall"
 )
 
+// FindAvailable returns up to count ports that can currently be bound on IPv4 loopback.
+// The probe socket is closed before returning, so availability is only a point-in-time result.
 func FindAvailable(portRange Range, count int) ([]uint32, error) {
 	if portRange.Start < 1 || portRange.End > 65535 || portRange.Start > portRange.End {
 		return nil, fmt.Errorf("invalid port range %d-%d", portRange.Start, portRange.End)
@@ -29,6 +29,8 @@ func FindAvailable(portRange Range, count int) ([]uint32, error) {
 	return available, nil
 }
 
+// IsAvailable briefly binds a loopback socket to test one TCP or UDP port.
+// A bind conflict means the port is occupied; other OS errors are returned to the caller.
 func IsAvailable(port uint32, protocol string) (bool, error) {
 	if port < 1 || port > 65535 {
 		return false, fmt.Errorf("port must be between 1 and 65535, got %d", port)
@@ -37,7 +39,7 @@ func IsAvailable(port uint32, protocol string) (bool, error) {
 	switch protocol {
 	case "tcp":
 		listener, err := net.Listen("tcp", address)
-		if errors.Is(err, syscall.EADDRINUSE) {
+		if isAddressInUse(err) {
 			return false, nil
 		}
 		if err != nil {
@@ -49,7 +51,7 @@ func IsAvailable(port uint32, protocol string) (bool, error) {
 		return true, nil
 	case "udp":
 		packetConn, err := net.ListenPacket("udp", address)
-		if errors.Is(err, syscall.EADDRINUSE) {
+		if isAddressInUse(err) {
 			return false, nil
 		}
 		if err != nil {

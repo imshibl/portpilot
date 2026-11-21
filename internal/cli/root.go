@@ -1,3 +1,4 @@
+// Package cli defines PortPilot's Cobra commands and connects them to core packages.
 package cli
 
 import (
@@ -8,8 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is replaced by GoReleaser for tagged releases.
 var version = "0.1.0"
 
+// NewRoot creates the top-level CLI and injects I/O and system services for testability.
 func NewRoot(scanner discovery.Scanner, killer processmgmt.Killer, input io.Reader, output, errorOutput io.Writer) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "portpilot",

@@ -1,3 +1,4 @@
+// These tests cover port validation, range parsing, and combined filtering behavior.
 package ports
 
 import (
@@ -5,7 +6,9 @@ import (
 	"testing"
 )
 
+// TestValidatePort accepts only values in the standard port-number range.
 func TestValidatePort(t *testing.T) {
+	// The smallest and largest TCP/UDP port numbers are valid; values outside them are not.
 	for _, port := range []int{1, 65535} {
 		if _, err := Validate(port); err != nil {
 			t.Errorf("Validate(%d) returned error: %v", port, err)
@@ -18,6 +21,7 @@ func TestValidatePort(t *testing.T) {
 	}
 }
 
+// TestParseRange accepts correctly ordered endpoints and rejects malformed ranges.
 func TestParseRange(t *testing.T) {
 	got, err := ParseRange("3000-4000")
 	if err != nil {
@@ -33,7 +37,9 @@ func TestParseRange(t *testing.T) {
 	}
 }
 
+// TestFilterRangeAndProcess checks the intersection of range and name filters.
 func TestFilterRangeAndProcess(t *testing.T) {
+	// Both filters must match, and process-name matching should ignore letter case.
 	listeners := []Listener{
 		{Port: 3001, Process: "Node"},
 		{Port: 3002, Process: "python"},

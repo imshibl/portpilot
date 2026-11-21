@@ -1,3 +1,4 @@
+// Package monitor compares port scans and describes newly occupied or released sockets.
 package monitor
 
 import (
@@ -7,11 +8,13 @@ import (
 	"github.com/portpilot/portpilot/internal/ports"
 )
 
+// Change records a listener appearing or disappearing between two scans.
 type Change struct {
-	Occupied bool
-	Listener ports.Listener
+	Occupied bool           // True when the socket appeared; false when it was released.
+	Listener ports.Listener // The socket whose state changed.
 }
 
+// Diff finds listeners present in only one snapshot and sorts changes for stable output.
 func Diff(previous, current []ports.Listener) []Change {
 	before := make(map[string]ports.Listener, len(previous))
 	after := make(map[string]ports.Listener, len(current))
@@ -48,6 +51,7 @@ func Diff(previous, current []ports.Listener) []Change {
 	return changes
 }
 
+// Describe formats one change as a short human-readable status message.
 func Describe(change Change) string {
 	state := "available"
 	if change.Occupied {
@@ -58,6 +62,7 @@ func Describe(change Change) string {
 		change.Listener.PID, change.Listener.Process)
 }
 
+// key identifies a socket owner so a restarted process with a reused PID is a new listener.
 func key(listener ports.Listener) string {
 	return fmt.Sprintf("%s/%d/%d/%d/%s", listener.Protocol, listener.Port, listener.PID, listener.StartTime, listener.LocalAddress)
 }

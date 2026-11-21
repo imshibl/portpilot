@@ -1,3 +1,4 @@
+// These tests exercise CLI behavior with fake discovery and termination services.
 package cli
 
 import (
@@ -16,6 +17,7 @@ type testScanner struct {
 	err       error
 }
 
+// List returns test data or a configured error instead of querying the host OS.
 func (s testScanner) List() ([]ports.Listener, error) {
 	return s.listeners, s.err
 }
@@ -24,12 +26,14 @@ type testKiller struct {
 	killed []ports.Listener
 }
 
+// Kill records what the CLI asked to terminate without signaling a real process.
 func (k *testKiller) Kill(listener ports.Listener) error {
 	k.killed = append(k.killed, listener)
 	return nil
 }
 
 func execute(t *testing.T, scanner testScanner, killer *testKiller, input string, args ...string) (string, error) {
+	// Build a fresh root command so each test has isolated flags, output, and input.
 	t.Helper()
 	var output, errorOutput bytes.Buffer
 	root := NewRoot(scanner, killer, strings.NewReader(input), &output, &errorOutput)
@@ -39,6 +43,7 @@ func execute(t *testing.T, scanner testScanner, killer *testKiller, input string
 }
 
 func TestListCommandFiltersAndEncodesJSON(t *testing.T) {
+	// The JSON list should honor both filters and exclude UDP because list is TCP-only.
 	listeners := []ports.Listener{
 		{Port: 3001, Protocol: "tcp", Process: "node", PID: 10, LocalAddress: "127.0.0.1"},
 		{Port: 3002, Protocol: "tcp", Process: "python", PID: 20, LocalAddress: "127.0.0.1"},
@@ -53,6 +58,7 @@ func TestListCommandFiltersAndEncodesJSON(t *testing.T) {
 	}
 }
 
+// TestCheckRejectsInvalidPort verifies malformed port numbers fail before discovery.
 func TestCheckRejectsInvalidPort(t *testing.T) {
 	_, err := execute(t, testScanner{}, &testKiller{}, "", "check", "65536")
 	if err == nil || !strings.Contains(err.Error(), "65535") {
@@ -60,7 +66,9 @@ func TestCheckRejectsInvalidPort(t *testing.T) {
 	}
 }
 
+// TestCheckFindsBoundUDPSocketWhenDiscoveryHasNoOwner tests the bind-probe fallback.
 func TestCheckFindsBoundUDPSocketWhenDiscoveryHasNoOwner(t *testing.T) {
+	// The fallback bind probe detects a UDP socket even when discovery returns no owner.
 	socket, err := net.ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -77,7 +85,9 @@ func TestCheckFindsBoundUDPSocketWhenDiscoveryHasNoOwner(t *testing.T) {
 	}
 }
 
+// TestKillRequiresConfirmationUnlessForced checks default safety and the explicit bypass flag.
 func TestKillRequiresConfirmationUnlessForced(t *testing.T) {
+	// Declining leaves the fake process untouched; --force skips the prompt and invokes the killer.
 	listener := ports.Listener{
 		Port: 3000, Protocol: "tcp", Process: "test-server", PID: 42, LocalAddress: "127.0.0.1", StartTime: 123,
 	}
@@ -100,6 +110,23 @@ func TestKillRequiresConfirmationUnlessForced(t *testing.T) {
 	}
 }
 
+// TestKillReadsSeparateConfirmationsForMultipleProcesses ensures each owner gets its own answer.
+func TestKillReadsSeparateConfirmationsForMultipleProcesses(t *testing.T) {
+	listeners := []ports.Listener{
+		{Port: 3000, Protocol: "tcp", Process: "first", PID: 41, LocalAddress: "127.0.0.1", StartTime: 101},
+		{Port: 3000, Protocol: "tcp", Process: "second", PID: 42, LocalAddress: "127.0.0.1", StartTime: 102},
+	}
+	killer := &testKiller{}
+	_, err := execute(t, testScanner{listeners: listeners}, killer, "y\ny\n", "kill", "3000")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(killer.killed) != 2 {
+		t.Fatalf("expected two confirmed processes to be terminated, got %d", len(killer.killed))
+	}
+}
+
+// TestListPropagatesDiscoveryErrors ensures OS access problems are not hidden.
 func TestListPropagatesDiscoveryErrors(t *testing.T) {
 	_, err := execute(t, testScanner{err: errors.New("permission denied")}, &testKiller{}, "", "list")
 	if err == nil || !strings.Contains(err.Error(), "permission denied") {
