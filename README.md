@@ -67,7 +67,7 @@ GOOS=darwin  GOARCH=arm64 go build -o dist/portpilot-darwin-arm64 ./cmd/portpilo
 GOOS=windows GOARCH=amd64 go build -o dist/portpilot-windows-amd64.exe ./cmd/portpilot
 ```
 
-Tagged releases are built for Windows, macOS, and Linux (amd64 and arm64) and published as compressed archives by GitHub Actions. To publish from the current `main` commit, open **Actions → CI → Run workflow**, enter a new version such as `v0.1.0`, and start the run. The workflow tests the commit, creates the version tag, and publishes the release. You can also publish by pushing a `v*` tag directly. See the [CI workflow](.github/workflows/ci.yml).
+Tagged releases are built for Windows, macOS, and Linux (amd64 and arm64) and published as compressed archives by GitHub Actions. GoReleaser stages its release files in `.goreleaser-dist/` so its cleanup does not delete the local convenience binaries in `dist/`. To publish from the current `main` commit, open **Actions → CI → Run workflow**, enter a version such as `v0.1.0`, and start the run. The workflow tests the commit, creates the tag if needed (or reuses an existing tag), and publishes the release. You can also publish by pushing a `v*` tag directly. See the [CI workflow](.github/workflows/ci.yml).
 
 ## Platform notes
 

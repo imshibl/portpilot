@@ -1,0 +1,2 @@
+# GoReleaser stages archives here so --clean never removes the local binaries in dist/.
+/.goreleaser-dist/
